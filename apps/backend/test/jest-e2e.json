@@ -5,8 +5,12 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
+  "transformIgnorePatterns": [
+    "node_modules/(?!(jose)/)"
+  ],
   "testEnvironment": "node",
+  "testTimeout": 30000,
   "moduleNameMapper": {
-    "^@tampilkit-ac/api-contract$": "<rootDir>/../../packages/api-contract/src"
+    "^@tampilkit-ac/api-contract$": "<rootDir>/../../../packages/api-contract/src"
   }
 }

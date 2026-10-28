@@ -29,4 +29,5 @@
 ## Section B — Pembelajaran Dinamis (diisi otomatis oleh @curator)
 > Format: `- [YYYY-MM-DD] [Kategori] Deskripsi pelajaran & cara mencegahnya.`
 
-_(Belum ada entry.)_
+- [2026-10-28] [Windows / NPM Workspace] Pada environment Windows, skrip package.json yang menggunakan `|| true` akan gagal karena command `true` tidak dikenali oleh cmd.exe. Konfigurasikan ESLint 9 flat config (`eslint.config.mjs`) secara eksplisit di tiap workspace agar linter berjalan deterministik tanpa bergantung pada trik fallback shell.
+- [2026-10-28] [TypeScript Monorepo Resolution] Pada NestJS backend CommonJS, `"moduleResolution": "node"` wajib didefinisikan di tsconfig agar resolusi internal workspace symlink `@tampilkit-ac/api-contract` dapat menemukan declaration file (`.d.ts`) setelah paket shared dibangun (`tsc -b`).

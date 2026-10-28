@@ -1,55 +1,40 @@
-import { MapPin, CheckCircle, Navigation } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { formatRupiah } from '@/lib/utils';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ServiceAreaCard } from '@/components/public/service-area-card';
+import { PublicServiceArea } from '@tampilkit-ac/api-contract';
 
-const AREAS = [
-  { city: 'Jakarta Selatan', districts: ['Kebayoran Baru', 'Cilandak', 'Tebet', 'Pasar Minggu', 'Mampang Prapatan'], fee: 0, tag: 'Bebas Biaya Kunjungan' },
-  { city: 'Jakarta Barat', districts: ['Kebon Jeruk', 'Kembangan', 'Palmerah'], fee: 20000, tag: 'Tersedia Setiap Hari' },
-  { city: 'Tangerang Selatan', districts: ['Serpong & BSD', 'Bintaro', 'Ciputat'], fee: 25000, tag: 'Tersedia Setiap Hari' },
-  { city: 'Jakarta Pusat & Timur', districts: ['Tanah Abang', 'Menteng', 'Matraman', 'Duren Sawit'], fee: 20000, tag: 'Konfirmasi Terlebih Dahulu' },
-];
+interface ServiceAreaSectionProps {
+  areas: PublicServiceArea[];
+}
 
-export function ServiceAreaSection() {
+export function ServiceAreaSection({ areas }: ServiceAreaSectionProps) {
   return (
-    <section id="area-layanan" className="py-16 lg:py-24 bg-slate-50 border-t">
+    <section id="area-layanan" className="py-16 bg-white border-b border-slate-200">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto text-center space-y-3 mb-12">
-          <Badge variant="secondary" className="px-3 py-1 text-xs uppercase tracking-wider font-semibold text-primary">
-            Jangkauan Wilayah
-          </Badge>
-          <h2 className="text-2xl sm:text-4xl font-bold text-primary tracking-tight">
-            Cakupan Layanan Teknisi AC
-          </h2>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Teknisi kami siap melayani area pemukiman, apartemen, ruko, dan perkantoran di Jabodetabek.
-          </p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-accent block mb-1">
+              Jangkauan Operasional
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-primary">
+              Cakupan Area Layanan
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Teknisi CoolCare siap melayani wilayah Jabodetabek dengan ongkos kunjungan transparan.
+            </p>
+          </div>
+          <Button asChild variant="outline" className="self-start md:self-auto gap-2">
+            <Link href="/service-areas">
+              <span>Lihat Semua Area</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {AREAS.map((area, index) => (
-            <Card key={index} className="bg-white border-slate-200 shadow-sm">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center text-accent">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <h3 className="font-bold text-primary text-base">{area.city}</h3>
-                </div>
-
-                <div className="space-y-1.5 text-xs text-slate-600">
-                  <span className="font-medium text-slate-500 block">Kecamatan / Wilayah:</span>
-                  <p className="leading-relaxed">{area.districts.join(', ')}</p>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Ongkos Kunjungan:</span>
-                  <span className="font-bold text-primary">
-                    {area.fee === 0 ? 'GRATIS' : formatRupiah(area.fee)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {areas.map((area) => (
+            <ServiceAreaCard key={area.id} area={area} />
           ))}
         </div>
       </div>

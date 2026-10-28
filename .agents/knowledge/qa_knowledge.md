@@ -30,4 +30,9 @@
 ## Section B — Pembelajaran Dinamis (diisi otomatis oleh @curator)
 > Format: `- [YYYY-MM-DD] [Kategori] Deskripsi pelajaran & cara mencegahnya.`
 
-_(Belum ada entry.)_
+### 2026-10-28 — Validasi Rilis, Integritas Relasional & Exclusion Constraints (Phase 12)
+- **Konteks**: Eksekusi pengujian komprehensif release readiness (238 automated tests), pengujian konkurensi database PostgreSQL GiST, dan audit keamanan OWASP ASVS 5.0.0.
+- **Pelajaran**:
+  1. **Integritas Alokasi Ulang Teknisi**: Saat melakukan penetapan ulang teknisi (`assignTechnician` / `reassignTechnician`) pada jadwal yang telah memiliki okupansi teknisi sebelumnya (misalnya dari alokasi awal tamu), okupansi aktif lama untuk booking tersebut WAJIB dibatalkan (`status = 'CANCELLED'`) di dalam transaksi atomik sebelum membuat okupansi baru, guna mencegah pelanggaran kernel PostgreSQL exclusion constraint `no_overlapping_technician_occupancy`.
+  2. **Urutan Cascading Teardown Pengujian**: Saat membersihkan data fixture pengujian relasional dengan constraint `RESTRICT`, urutan pembersihan wajib mengikuti hierarki dependensi terbalik: `PaymentReceipt` $\rightarrow$ `Payment` $\rightarrow$ `Invoice` $\rightarrow$ `WorkOrder` $\rightarrow$ `Booking` $\rightarrow$ `CustomerAddress` $\rightarrow$ `Customer`.
+  3. **Tiga Dimensi Keputusan Rilis**: Selalu pisahkan keputusan `TECHNICAL_READINESS` (berbasis bukti uji teknis), `BUSINESS_ACCEPTANCE` (berbasis sign-off stakeholder nyata), dan `PRODUCTION_AUTHORIZATION` (izin deployment eksplisit). Kesiapan teknis tidak boleh otomatis dianggap sebagai izin rilis ke server produksi live.

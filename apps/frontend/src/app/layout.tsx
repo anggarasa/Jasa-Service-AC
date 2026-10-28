@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { Navbar } from '@/components/layouts/navbar';
-import { Footer } from '@/components/layouts/footer';
 
 export const metadata: Metadata = {
   title: 'CoolCare AC Service | Sistem Booking Service AC & Perawatan Lapangan',
@@ -25,9 +23,7 @@ export default function RootLayout({
   return (
     <html lang="id" className="scroll-smooth">
       <body className="min-h-screen flex flex-col font-sans bg-background text-foreground">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        {children}
       </body>
     </html>
   );

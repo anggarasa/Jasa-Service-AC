@@ -7,6 +7,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import fastifyHelmet from '@fastify/helmet';
 import fastifyCookie from '@fastify/cookie';
+import fastifyMultipart from '@fastify/multipart';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -29,6 +30,14 @@ async function bootstrap() {
 
   // Cookies
   await app.register(fastifyCookie as unknown as any);
+
+  // Multipart File Uploads (Max 5MB)
+  await app.register(fastifyMultipart as unknown as any, {
+    limits: {
+      fileSize: 5 * 1024 * 1024,
+      files: 1,
+    },
+  });
 
   // Global Prefix
   app.setGlobalPrefix('api/v1');

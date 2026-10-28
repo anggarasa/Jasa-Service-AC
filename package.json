@@ -17,11 +17,15 @@
     "db:generate": "npm run db:generate -w @tampilkit-ac/backend",
     "db:migrate": "npm run db:migrate -w @tampilkit-ac/backend",
     "db:deploy": "npm run db:deploy -w @tampilkit-ac/backend",
-    "db:seed": "npm run db:seed -w @tampilkit-ac/backend"
+    "db:seed": "npm run db:seed -w @tampilkit-ac/backend",
+    "auth": "npm run auth -w @tampilkit-ac/backend"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
     "prisma": "^6.4.1",
     "tsx": "^4.19.3"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.8"
   }
 }

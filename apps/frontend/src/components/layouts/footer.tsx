@@ -1,7 +1,22 @@
 import Link from 'next/link';
 import { Wind, Phone, Mail, MapPin, Clock, ShieldCheck } from 'lucide-react';
+import { PublicBusiness } from '@tampilkit-ac/api-contract';
 
-export function Footer() {
+interface FooterProps {
+  business?: PublicBusiness | null;
+}
+
+export function Footer({ business }: FooterProps) {
+  const name = business?.name || 'CoolCare AC Service';
+  const phone = business?.phone || '+62 812-3456-7890';
+  const whatsapp = business?.whatsappNumber || '6281234567890';
+  const email = business?.email || 'halo@coolcare.id';
+  const address = business?.address || 'Jl. Merdeka No. 45';
+  const city = business?.city || 'Jakarta Selatan';
+  const province = business?.province || 'DKI Jakarta';
+
+  const waLink = `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Halo, saya ingin bertanya mengenai layanan service AC.')}`;
+
   return (
     <footer className="bg-primary text-slate-300 border-t border-primary-800">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
@@ -13,42 +28,48 @@ export function Footer() {
                 <Wind className="w-5 h-5 stroke-[2.5]" />
               </div>
               <span className="text-xl font-bold tracking-tight text-white">
-                CoolCare <span className="text-accent">AC</span>
+                {name}
               </span>
             </div>
             <p className="text-sm text-slate-400 leading-relaxed">
-              Solusi terpercaya untuk servis, perawatan berkala, perbaikan, dan instalasi AC rumah maupun kantor di area Jabodetabek.
+              {business?.description ||
+                'Solusi terpercaya untuk servis, perawatan berkala, perbaikan, dan instalasi AC rumah maupun kantor di area Jabodetabek.'}
             </p>
             <div className="flex items-center gap-2 text-xs text-accent">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Garansi Pengerjaan Hingga 30 Hari</span>
+              <span>Garansi Pengerjaan Berkualitas</span>
             </div>
           </div>
 
           {/* Quick Links */}
           <div className="space-y-3">
             <h4 className="text-sm font-semibold uppercase tracking-wider text-white">
-              Layanan Utama
+              Menu Navigasi
             </h4>
             <ul className="space-y-2 text-sm text-slate-400">
               <li>
-                <Link href="#layanan" className="hover:text-white transition-colors">
-                  Cuci AC Split & Inverter
+                <Link href="/services" className="hover:text-white transition-colors">
+                  Katalog Layanan
                 </Link>
               </li>
               <li>
-                <Link href="#layanan" className="hover:text-white transition-colors">
-                  Isi & Tambah Freon (R32 / R410A)
+                <Link href="/service-areas" className="hover:text-white transition-colors">
+                  Cakupan Wilayah
                 </Link>
               </li>
               <li>
-                <Link href="#layanan" className="hover:text-white transition-colors">
-                  Inspeksi & Diagnosa Kerusakan
+                <Link href="/gallery" className="hover:text-white transition-colors">
+                  Galeri Pengerjaan
                 </Link>
               </li>
               <li>
-                <Link href="#layanan" className="hover:text-white transition-colors">
-                  Bongkar Pasang AC Baru / Lama
+                <Link href="/about" className="hover:text-white transition-colors">
+                  Tentang Kami
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="hover:text-white transition-colors">
+                  Hubungi Kami
                 </Link>
               </li>
             </ul>
@@ -59,54 +80,88 @@ export function Footer() {
             <h4 className="text-sm font-semibold uppercase tracking-wider text-white">
               Jam Operasional
             </h4>
-            <div className="space-y-2 text-sm text-slate-400">
-              <div className="flex items-start gap-2">
+            <ul className="space-y-2 text-sm text-slate-400">
+              <li className="flex items-start gap-2">
                 <Clock className="w-4 h-4 text-accent mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-medium text-slate-200">Senin - Minggu:</p>
-                  <p>08.00 - 18.00 WIB</p>
+                  <span className="block font-medium text-slate-300">Senin – Jumat</span>
+                  <span className="text-xs text-slate-400">09:00 – 17:00 WIB</span>
                 </div>
-              </div>
-              <p className="text-xs text-slate-400 mt-2">
-                Layanan darurat perbaikan AC tersedia dengan perjanjian terlebih dahulu.
-              </p>
-            </div>
+              </li>
+              <li className="flex items-start gap-2">
+                <Clock className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+                <div>
+                  <span className="block font-medium text-slate-300">Sabtu</span>
+                  <span className="text-xs text-slate-400">09:00 – 15:00 WIB</span>
+                </div>
+              </li>
+              <li className="flex items-start gap-2">
+                <Clock className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
+                <div>
+                  <span className="block font-medium text-slate-300">Minggu & Hari Libur</span>
+                  <span className="text-xs text-rose-400">Tutup (Khusus Darurat via WA)</span>
+                </div>
+              </li>
+            </ul>
           </div>
 
-          {/* Contact */}
+          {/* Contact Details */}
           <div className="space-y-3">
             <h4 className="text-sm font-semibold uppercase tracking-wider text-white">
-              Kontak Kami
+              Kontak Kantor
             </h4>
-            <div className="space-y-2.5 text-sm text-slate-400">
-              <div className="flex items-center gap-2">
+            <ul className="space-y-2.5 text-sm text-slate-400">
+              <li className="flex items-start gap-2.5">
+                <MapPin className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+                <span>
+                  {address}, {city}, {province}
+                </span>
+              </li>
+              <li className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-accent shrink-0" />
-                <a href="tel:081234567890" className="hover:text-white transition-colors">
-                  +62 812-3456-7890
+                <a href={`tel:${phone.replace(/\s+/g, '')}`} className="hover:text-white transition-colors">
+                  {phone}
                 </a>
-              </div>
-              <div className="flex items-center gap-2">
+              </li>
+              <li className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-accent shrink-0" />
-                <a href="mailto:halo@coolcare.id" className="hover:text-white transition-colors">
-                  halo@coolcare.id
+                <a href={`mailto:${email}`} className="hover:text-white transition-colors">
+                  {email}
                 </a>
-              </div>
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                <span>Kebayoran Baru, Jakarta Selatan, DKI Jakarta</span>
-              </div>
-            </div>
+              </li>
+              <li className="pt-2">
+                <a
+                  href={waLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>Chat WhatsApp</span>
+                </a>
+              </li>
+            </ul>
           </div>
         </div>
 
-        <div className="border-t border-slate-800 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-          <p>© {new Date().getFullYear()} CoolCare AC Service. Template by TampilKit Studio.</p>
-          <div className="flex items-center gap-4">
-            <span>Privasi & Kebijakan</span>
-            <span>•</span>
-            <span>Syarat Layanan</span>
-            <span>•</span>
-            <span>Transparansi Harga</span>
+        {/* Bottom Bar */}
+        <div className="mt-12 pt-8 border-t border-primary-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+          <p>
+            &copy; {new Date().getFullYear()} {name}. Seluruh Hak Cipta Dilindungi.
+          </p>
+          <div className="flex items-center gap-6">
+            <Link href="/services" className="hover:text-slate-300 transition-colors">
+              Layanan
+            </Link>
+            <Link href="/service-areas" className="hover:text-slate-300 transition-colors">
+              Area
+            </Link>
+            <Link href="/contact" className="hover:text-slate-300 transition-colors">
+              Kontak
+            </Link>
+            <Link href="/login" className="hover:text-slate-300 transition-colors text-accent">
+              Portal Staf
+            </Link>
           </div>
         </div>
       </div>

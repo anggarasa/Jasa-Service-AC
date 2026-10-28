@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Optional, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Minio from 'minio';
 import { randomUUID } from 'crypto';
@@ -10,7 +10,21 @@ export type AllowedStoragePath =
   | 'gallery/images/'
   | 'ac-units/photos/'
   | 'work-orders/before/'
-  | 'work-orders/after/';
+  | 'work-orders/after/'
+  | 'work-orders/photos/'
+  | 'work-orders/photos/before/'
+  | 'work-orders/photos/during/'
+  | 'work-orders/photos/after/'
+  | 'work-orders/photos/issue/'
+  | 'payments/proofs/'
+  | 'approvals/evidence/';
+
+export interface ValidatedImageInfo {
+  buffer: Buffer;
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
+  extension: 'jpg' | 'png' | 'webp';
+  size: number;
+}
 
 @Injectable()
 export class StorageService implements OnModuleInit {
@@ -96,6 +110,75 @@ export class StorageService implements OnModuleInit {
     }
   }
 
+  validateImage(buffer: Buffer, declaredMimeType?: string): ValidatedImageInfo {
+    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+    if (!buffer || buffer.length === 0) {
+      throw new BadRequestException('File tidak boleh kosong.');
+    }
+    if (buffer.length > MAX_SIZE) {
+      throw new BadRequestException('Ukuran file melebihi batas maksimal 5 MB.');
+    }
+
+    // Reject SVG by string / header inspection
+    const headerPrefix = buffer.slice(0, 100).toString('utf-8').toLowerCase();
+    if (headerPrefix.includes('<svg') || headerPrefix.includes('<?xml')) {
+      throw new BadRequestException('Format berkas SVG tidak diizinkan demi keamanan.');
+    }
+
+    // Inspect magic bytes
+    // JPEG: FF D8 FF
+    if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+      return {
+        buffer,
+        mimeType: 'image/jpeg',
+        extension: 'jpg',
+        size: buffer.length,
+      };
+    }
+
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    if (
+      buffer.length >= 8 &&
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47 &&
+      buffer[4] === 0x0d &&
+      buffer[5] === 0x0a &&
+      buffer[6] === 0x1a &&
+      buffer[7] === 0x0a
+    ) {
+      return {
+        buffer,
+        mimeType: 'image/png',
+        extension: 'png',
+        size: buffer.length,
+      };
+    }
+
+    // WebP: RIFF (bytes 0-3) and WEBP (bytes 8-11)
+    if (
+      buffer.length >= 12 &&
+      buffer[0] === 0x52 && // R
+      buffer[1] === 0x49 && // I
+      buffer[2] === 0x46 && // F
+      buffer[3] === 0x46 && // F
+      buffer[8] === 0x57 && // W
+      buffer[9] === 0x45 && // E
+      buffer[10] === 0x42 && // B
+      buffer[11] === 0x50 // P
+    ) {
+      return {
+        buffer,
+        mimeType: 'image/webp',
+        extension: 'webp',
+        size: buffer.length,
+      };
+    }
+
+    throw new BadRequestException('Format berkas tidak didukung. Hanya JPEG, PNG, dan WebP yang diizinkan.');
+  }
+
   async uploadObject(
     folder: AllowedStoragePath,
     fileBuffer: Buffer,
@@ -116,6 +199,15 @@ export class StorageService implements OnModuleInit {
     return { objectKey: safeKey };
   }
 
+  async getObjectStream(objectKey: string): Promise<NodeJS.ReadableStream | null> {
+    if (!this.client) return null;
+    try {
+      return await this.client.getObject(this.bucket, objectKey);
+    } catch {
+      return null;
+    }
+  }
+
   async getObjectMetadata(objectKey: string): Promise<Minio.ItemBucketMetadata> {
     if (!this.client) {
       return {};
@@ -126,7 +218,12 @@ export class StorageService implements OnModuleInit {
 
   async deleteObject(objectKey: string): Promise<void> {
     if (!this.client) return;
-    await this.client.removeObject(this.bucket, objectKey);
+    try {
+      await this.client.removeObject(this.bucket, objectKey);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Could not delete object ${objectKey} from MinIO: ${msg}`);
+    }
   }
 
   async getPresignedDownloadUrl(
