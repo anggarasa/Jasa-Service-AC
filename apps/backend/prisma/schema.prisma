@@ -1,0 +1,411 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  TECHNICIAN
+}
+
+enum PriceType {
+  FIXED
+  STARTING_FROM
+  INSPECTION_REQUIRED
+}
+
+enum PricingUnit {
+  PER_UNIT
+  PER_VISIT
+  INSPECTION
+}
+
+enum MediaPurpose {
+  BUSINESS_LOGO
+  SERVICE_IMAGE
+  GALLERY_IMAGE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum WorkOrderStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id           String       @id @default(uuid())
+  name         String
+  email        String       @unique
+  passwordHash String
+  role         UserRole     @default(TECHNICIAN)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  sessions     Session[]
+  technician   Technician?
+  mediaAssets  MediaAsset[]
+
+  @@index([email])
+}
+
+model Session {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String    @unique
+  userAgent    String?
+  ipAddress    String?
+  isRevoked    Boolean   @default(false)
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId, isRevoked])
+}
+
+model Business {
+  id                  String                   @id @default(uuid())
+  name                String
+  slug                String                   @unique
+  description         String?
+  email               String
+  phone               String
+  whatsappNumber      String
+  address             String
+  city                String                   @default("Jakarta Selatan")
+  province            String                   @default("DKI Jakarta")
+  postalCode          String?                  @default("12160")
+  googleMapsUrl       String?
+  timezone            String                   @default("Asia/Jakarta")
+  logoObjectKey       String?
+  isActive            Boolean                  @default(true)
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  settings            BusinessSetting?
+  operatingHours      BusinessOperatingHour[]
+  closures            BusinessClosure[]
+  categories          ServiceCategory[]
+  services            Service[]
+  serviceAreas        ServiceArea[]
+  mediaAssets         MediaAsset[]
+  gallery             BusinessGallery[]
+  customers           Customer[]
+  technicians         Technician[]
+  bookings            Booking[]
+  calendarConnections CalendarConnection[]
+
+  @@index([slug])
+}
+
+model BusinessSetting {
+  id                          String   @id @default(uuid())
+  businessId                  String   @unique
+  business                    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bookingEnabled              Boolean  @default(true)
+  bookingIntervalMinutes      Int      @default(30)
+  defaultServiceBufferMinutes Int      @default(15)
+  defaultTravelBufferMinutes  Int      @default(30)
+  minimumAdvanceMinutes       Int      @default(120)
+  maximumAdvanceDays          Int      @default(30)
+  autoConfirmBooking          Boolean  @default(false)
+  allowCustomerCancellation   Boolean  @default(false)
+  cancellationWindowHours     Int      @default(24)
+  maximumUnitsPerBooking      Int      @default(5)
+  currency                    String   @default("IDR")
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+}
+
+model BusinessOperatingHour {
+  id           String                   @id @default(uuid())
+  businessId   String
+  business     Business                 @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  dayOfWeek    Int // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  isOpen       Boolean                  @default(true)
+  openTime     String                   @default("09:00") // HH:mm local wall-clock
+  closeTime    String                   @default("17:00")
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+  breaks       BusinessOperatingBreak[]
+
+  @@unique([businessId, dayOfWeek])
+  @@index([businessId, dayOfWeek])
+}
+
+model BusinessOperatingBreak {
+  id              String                @id @default(uuid())
+  operatingHourId String
+  operatingHour   BusinessOperatingHour @relation(fields: [operatingHourId], references: [id], onDelete: Cascade)
+  startTime       String                @default("12:00") // HH:mm
+  endTime         String                @default("13:00") // HH:mm
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([operatingHourId])
+}
+
+model BusinessClosure {
+  id         String   @id @default(uuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  startDate  DateTime
+  endDate    DateTime
+  reason     String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([businessId, startDate, endDate])
+}
+
+model ServiceCategory {
+  id           String    @id @default(uuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String
+  slug         String
+  description  String?
+  isActive     Boolean   @default(true)
+  displayOrder Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  services     Service[]
+
+  @@unique([businessId, slug])
+  @@index([businessId, displayOrder])
+}
+
+model Service {
+  id                       String          @id @default(uuid())
+  businessId               String
+  business                 Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  categoryId               String
+  category                 ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  name                     String
+  slug                     String
+  shortDescription         String?
+  description              String
+  priceType                PriceType       @default(STARTING_FROM)
+  basePrice                Decimal?        @db.Decimal(12, 2)
+  pricingUnit              PricingUnit     @default(PER_UNIT)
+  estimatedDurationMinutes Int             @default(60)
+  additionalBufferMinutes  Int             @default(0)
+  minimumUnits             Int             @default(1)
+  maximumUnits             Int             @default(10)
+  imageObjectKey           String?
+  displayOrder             Int             @default(0)
+  isActive                 Boolean         @default(true)
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+  bookings                 Booking[]
+
+  @@unique([businessId, slug])
+  @@index([businessId, isActive, displayOrder])
+}
+
+model ServiceArea {
+  id                     String   @id @default(uuid())
+  businessId             String
+  business               Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name                   String
+  province               String   @default("DKI Jakarta")
+  city                   String
+  district               String
+  visitFee               Decimal  @default(0) @db.Decimal(12, 2)
+  estimatedTravelMinutes Int      @default(30)
+  displayOrder           Int      @default(0)
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@unique([businessId, name])
+  @@index([businessId, city, district])
+}
+
+model MediaAsset {
+  id              String            @id @default(uuid())
+  businessId      String
+  business        Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  objectKey       String            @unique
+  bucket          String            @default("tampilkit-ac-booking")
+  mimeType        String
+  fileSize        Int
+  width           Int?
+  height          Int?
+  purpose         MediaPurpose
+  createdByUserId String?
+  createdByUser   User?             @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  galleryItems    BusinessGallery[]
+
+  @@index([businessId, purpose])
+}
+
+model BusinessGallery {
+  id           String     @id @default(uuid())
+  businessId   String
+  business     Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  mediaAssetId String
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+  caption      String?
+  altText      String?
+  displayOrder Int        @default(0)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([businessId, isActive, displayOrder])
+}
+
+model Customer {
+  id         String            @id @default(uuid())
+  businessId String
+  business   Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  email      String?
+  phone      String
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  addresses  CustomerAddress[]
+  acUnits    AcUnit[]
+  bookings   Booking[]
+
+  @@unique([businessId, phone])
+  @@index([businessId, phone])
+}
+
+model CustomerAddress {
+  id          String    @id @default(uuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label       String
+  fullAddress String
+  city        String
+  district    String
+  postalCode  String?
+  landmark    String?
+  latitude    Decimal?  @db.Decimal(10, 7)
+  longitude   Decimal?  @db.Decimal(10, 7)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  bookings    Booking[]
+
+  @@index([customerId])
+}
+
+model AcUnit {
+  id           String          @id @default(uuid())
+  customerId   String
+  customer     Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  brand        String
+  model        String?
+  type         String          @default("Split Wall")
+  capacityPk   Decimal         @db.Decimal(4, 2)
+  notes        String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  bookingUnits BookingAcUnit[]
+
+  @@index([customerId])
+}
+
+model Technician {
+  id               String       @id @default(uuid())
+  businessId       String
+  business         Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId           String       @unique
+  user             User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  isActive         Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  assignedBookings Booking[]
+  workOrders       WorkOrder[]
+
+  @@index([businessId, isActive])
+}
+
+model Booking {
+  id                String          @id @default(uuid())
+  businessId        String
+  business          Business        @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  customerId        String
+  customer          Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customerAddressId String
+  customerAddress   CustomerAddress @relation(fields: [customerAddressId], references: [id], onDelete: Restrict)
+  serviceId         String
+  service           Service         @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  technicianId      String?
+  technician        Technician?     @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  bookingCode       String          @unique
+  scheduledStartAt  DateTime
+  scheduledEndAt    DateTime
+  status            BookingStatus   @default(PENDING)
+  estimatedPrice    Decimal         @db.Decimal(12, 2)
+  customerNotes     String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  workOrders        WorkOrder[]
+  bookingUnits      BookingAcUnit[]
+
+  @@index([businessId, status])
+  @@index([scheduledStartAt])
+  @@index([bookingCode])
+}
+
+model BookingAcUnit {
+  id        String   @id @default(uuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  acUnitId  String
+  acUnit    AcUnit   @relation(fields: [acUnitId], references: [id], onDelete: Restrict)
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@unique([bookingId, acUnitId])
+}
+
+model WorkOrder {
+  id              String          @id @default(uuid())
+  bookingId       String
+  booking         Booking         @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  technicianId    String?
+  technician      Technician?     @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  status          WorkOrderStatus @default(SCHEDULED)
+  diagnosis       String?
+  technicianNotes String?
+  completedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([bookingId])
+  @@index([technicianId, status])
+}
+
+model CalendarConnection {
+  id                   String   @id @default(uuid())
+  businessId           String
+  business             Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  provider             String   @default("GOOGLE")
+  calendarId           String?
+  status               String   @default("DISCONNECTED")
+  encryptedCredentials String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([businessId])
+}

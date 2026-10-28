@@ -1,0 +1,1735 @@
+# TAMPILKIT STUDIO — AC SERVICE BOOKING SYSTEM
+# PHASE 03 — BUSINESS SETTINGS, AC SERVICE CATALOG, PRICING & SERVICE AREA MANAGEMENT
+
+## ROLE & EXECUTION MODE
+
+You are a Principal Fullstack Engineer, NestJS Fastify Architect, Next.js Engineer, Database Architect, and UI/UX Engineer.
+
+Your task is to IMPLEMENT Phase 03 directly inside the existing TampilKit AC Service Booking monorepo.
+
+Do not provide only a plan, pseudocode, or architectural explanation.
+
+Inspect the existing project, write functional backend and frontend code, extend Prisma safely, integrate MinIO, run tests, fix defects, and produce an evidence-based report.
+
+Do not rebuild the project from scratch.
+
+Do not automatically proceed to Phase 04.
+
+All user-facing text must use Bahasa Indonesia.
+
+---
+
+# 1. PROJECT CONTEXT
+
+Project: TampilKit AC Service Booking System
+
+Edition: Basic Field Service
+
+Demo Brand: CoolCare AC Service
+
+Architecture: npm Workspaces Monorepo
+
+Frontend:
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- React Hook Form
+- Zod
+- Lucide React
+
+Backend:
+- NestJS
+- Fastify Adapter
+- Prisma ORM
+- PostgreSQL
+- class-validator
+- class-transformer
+- Swagger/OpenAPI
+
+Infrastructure:
+- PostgreSQL local
+- MinIO Docker Desktop
+- npm workspaces
+
+Authentication:
+- JWT Access Token
+- JWT Refresh Token
+- PostgreSQL-backed sessions
+- HttpOnly cookies
+- OWNER, ADMIN, TECHNICIAN roles
+
+Existing development:
+
+Phase 01:
+Monorepo, Next.js, NestJS Fastify, Prisma, PostgreSQL, MinIO, Swagger, health endpoints.
+
+Phase 02:
+JWT authentication, refresh token rotation, session management, RBAC, owner/admin dashboard, technician workspace.
+
+Preserve all working Phase 01–02 functionality.
+
+## Strict Rules
+
+1. npm ONLY.
+2. Do not use pnpm, Yarn, or Bun.
+3. Keep frontend and backend separate.
+4. Do not use Prisma in the frontend.
+5. Do not replace NestJS Fastify with Express.
+6. Do not replace JWT authentication.
+7. Do not install Auth.js or NextAuth.
+8. Do not replace MinIO.
+9. Do not start a duplicate MinIO instance.
+10. Do not introduce unnecessary microservices.
+11. Do not implement customer booking yet.
+12. Do not implement technician assignment yet.
+13. Do not integrate Google Calendar yet.
+
+---
+
+# 2. PHASE OBJECTIVES
+
+Implement complete management functionality for:
+
+A. Business Profile
+
+B. Business Operating Hours
+
+C. Business Holiday / Closure Exceptions
+
+D. Booking Configuration
+
+E. AC Service Categories
+
+F. AC Service Catalog
+
+G. Pricing Rules
+
+H. Service Area Coverage
+
+I. MinIO Business Media
+
+J. Business Gallery
+
+K. Dashboard Integration
+
+L. Swagger Documentation
+
+M. Testing and Regression
+
+All CRUD operations must persist real data in PostgreSQL.
+
+Media objects must be stored in MinIO.
+
+Do not use mock data as the source for functional admin operations.
+
+---
+
+# 3. FIRST — INSPECT EXISTING PROJECT
+
+Before making changes:
+
+- Inspect root npm workspaces.
+- Inspect backend modules.
+- Inspect Next.js layout.
+- Inspect Prisma schema and migrations.
+- Inspect current User and Business models.
+- Inspect Service and ServiceCategory models.
+- Inspect ServiceArea model.
+- Inspect MinIO storage implementation.
+- Inspect JWT Guards.
+- Inspect RBAC implementation.
+- Inspect API response contracts.
+- Inspect Swagger configuration.
+- Read Phase 01 and Phase 02 implementation reports.
+
+Confirm whether the previous phases actually passed.
+
+Do not blindly duplicate existing modules.
+
+If a required foundation is missing, implement the minimum necessary repair and document it.
+
+---
+
+# 4. BUSINESS PROFILE MANAGEMENT
+
+Implement:
+
+Frontend:
+GET /dashboard/settings/business
+
+Backend:
+GET /api/v1/admin/business
+PATCH /api/v1/admin/business
+
+## Fields
+
+- Business Name
+- Business Slug
+- Description
+- Email
+- Phone Number
+- WhatsApp Number
+- Full Address
+- City
+- Province
+- Postal Code
+- Google Maps URL (optional)
+- Timezone
+- Logo
+- Business Active Status
+
+Use the existing Business Prisma model.
+
+Add only missing fields.
+
+## Requirements
+
+- Load actual business information.
+- Allow OWNER to update the business.
+- ADMIN may view business profile.
+- TECHNICIAN cannot access business configuration.
+- Validate all fields.
+- Normalize email and phone.
+- Validate WhatsApp format.
+- Validate Maps URL.
+- Reject excessively long text.
+- Preserve existing logo when updating unrelated fields.
+- Use Asia/Jakarta as the initial timezone.
+- Prevent duplicate slugs.
+- Display success only after database persistence.
+
+The system is single-business in Basic Edition.
+
+Do not implement a full multi-tenant administration platform.
+
+## UI
+
+Create grouped forms:
+
+- General Information
+- Contact Details
+- Business Address
+- Branding
+- Business Status
+
+Use shadcn/ui cards and responsive forms.
+
+---
+
+# 5. OPERATING HOURS MANAGEMENT
+
+Frontend:
+
+/dashboard/settings/operating-hours
+
+Backend:
+
+GET /api/v1/admin/business/operating-hours
+
+PUT /api/v1/admin/business/operating-hours
+
+## Weekly Schedule
+
+Support:
+
+- Sunday
+- Monday
+- Tuesday
+- Wednesday
+- Thursday
+- Friday
+- Saturday
+
+Each day supports:
+
+- Open/closed.
+- Opening time.
+- Closing time.
+- Zero or multiple break periods.
+
+## Prisma Models
+
+BusinessOperatingHour:
+
+- id
+- businessId
+- dayOfWeek
+- isOpen
+- openTime
+- closeTime
+- createdAt
+- updatedAt
+
+BusinessOperatingBreak:
+
+- id
+- operatingHourId
+- startTime
+- endTime
+- createdAt
+- updatedAt
+
+Use the documented convention:
+
+0 = Sunday
+1 = Monday
+...
+6 = Saturday
+
+Represent recurring daily times as local wall-clock values, not arbitrary UTC timestamps.
+
+## Validation
+
+- Opening time precedes closing time.
+- Closing time must be valid.
+- Breaks must be within working hours.
+- Breaks cannot overlap.
+- Closed days are not bookable.
+- Duplicate weekday records are rejected.
+- Overnight shifts are excluded from Basic v1.
+- Updates must be atomic.
+
+## UI
+
+Use seven schedule rows with:
+
+- Toggle Open/Closed.
+- Opening time.
+- Closing time.
+- Add Break.
+- Remove Break.
+
+Include a clear save operation.
+
+Do not implement appointment slot generation yet.
+
+This configuration will be consumed by Phase 06 and Phase 07.
+
+---
+
+# 6. HOLIDAY AND CLOSURE EXCEPTIONS
+
+Implement date-specific closures independent of recurring weekly hours.
+
+Frontend:
+
+/dashboard/settings/holidays
+
+Backend:
+
+GET /api/v1/admin/business/closures
+
+POST /api/v1/admin/business/closures
+
+PATCH /api/v1/admin/business/closures/:id
+
+DELETE /api/v1/admin/business/closures/:id
+
+## BusinessClosure Model
+
+Fields:
+
+- id
+- businessId
+- startDate
+- endDate
+- reason
+- isActive
+- createdAt
+- updatedAt
+
+Treat startDate/endDate as business-local calendar dates.
+
+Support:
+
+- Public holidays entered manually.
+- Company closure.
+- Operational shutdown.
+- Special maintenance closure.
+
+Do not automatically fetch national holidays.
+
+Do not invent a Google Calendar connection.
+
+## Validation
+
+- Start date must not exceed end date.
+- Date ranges must be bounded.
+- Conflicting duplicate closures should be rejected or safely merged.
+- Deactivation preserves history.
+
+## Scope
+
+This module defines business-wide closures.
+
+Individual technician leave will be implemented later.
+
+---
+
+# 7. BOOKING CONFIGURATION
+
+Frontend:
+
+/dashboard/settings/booking
+
+Backend:
+
+GET /api/v1/admin/business/booking-settings
+
+PATCH /api/v1/admin/business/booking-settings
+
+## Settings
+
+- bookingEnabled
+- bookingIntervalMinutes
+- defaultServiceBufferMinutes
+- defaultTravelBufferMinutes
+- minimumAdvanceMinutes
+- maximumAdvanceDays
+- autoConfirmBooking
+- allowCustomerCancellation
+- cancellationWindowHours
+- maximumUnitsPerBooking
+
+Recommended defaults:
+
+bookingEnabled = true
+
+bookingIntervalMinutes = 30
+
+defaultServiceBufferMinutes = 15
+
+defaultTravelBufferMinutes = 30
+
+minimumAdvanceMinutes = 120
+
+maximumAdvanceDays = 30
+
+autoConfirmBooking = false
+
+allowCustomerCancellation = false
+
+cancellationWindowHours = 24
+
+maximumUnitsPerBooking = 5
+
+## Important Field Service Policy
+
+Unlike salon bookings, AC service requires technician travel.
+
+Separate:
+
+- Service duration.
+- Preparation/cleanup buffer.
+- Travel buffer.
+
+Do not silently include travel costs in service price.
+
+For Basic v1, travel time is configurable as a fixed buffer.
+
+Do not implement route optimization or Google Maps traffic calculations.
+
+## Validation
+
+- Intervals must be positive.
+- Buffer values must be non-negative.
+- Maximum advance days must be positive.
+- Maximum units must be reasonable.
+- Invalid combinations must be rejected.
+- Updates must be atomic.
+
+Do not create real bookings in this phase.
+
+---
+
+# 8. AC SERVICE CATEGORY MANAGEMENT
+
+Frontend:
+
+/dashboard/services/categories
+
+Backend:
+
+GET /api/v1/admin/service-categories
+
+POST /api/v1/admin/service-categories
+
+GET /api/v1/admin/service-categories/:id
+
+PATCH /api/v1/admin/service-categories/:id
+
+DELETE /api/v1/admin/service-categories/:id
+
+## Category Fields
+
+- name
+- slug
+- description
+- displayOrder
+- isActive
+
+Example categories:
+
+- AC Cleaning
+- AC Maintenance
+- AC Repair
+- AC Installation
+
+## Required Features
+
+- List.
+- Create.
+- Edit.
+- Search.
+- Sort.
+- Activate/deactivate.
+- Display service count.
+
+## Rules
+
+- Name required.
+- Slug unique within business.
+- Slug normalized.
+- displayOrder non-negative.
+- Category ownership validated.
+- Inactive categories hidden from future public catalog.
+- Do not delete categories referenced by services.
+- Preserve historical associations.
+
+Use safe deactivation instead of hard deletion when a category is referenced.
+
+---
+
+# 9. AC SERVICE CATALOG MANAGEMENT
+
+Frontend:
+
+/dashboard/services
+
+/dashboard/services/new
+
+/dashboard/services/[id]/edit
+
+Backend:
+
+GET /api/v1/admin/services
+
+POST /api/v1/admin/services
+
+GET /api/v1/admin/services/:id
+
+PATCH /api/v1/admin/services/:id
+
+DELETE /api/v1/admin/services/:id
+
+## Fields
+
+- name
+- slug
+- categoryId
+- shortDescription
+- description
+- priceType
+- basePrice
+- pricingUnit
+- estimatedDurationMinutes
+- additionalBufferMinutes
+- minimumUnits
+- maximumUnits
+- imageObjectKey
+- displayOrder
+- isActive
+
+Pricing unit examples:
+
+- PER_UNIT
+- PER_VISIT
+- INSPECTION
+
+Use enums where appropriate.
+
+## Pricing Types
+
+FIXED
+
+STARTING_FROM
+
+INSPECTION_REQUIRED
+
+## Pricing Behavior
+
+FIXED:
+A known fixed price for the defined service scope.
+
+STARTING_FROM:
+A minimum estimated price. Actual final price may differ after technician inspection.
+
+INSPECTION_REQUIRED:
+The service requires inspection before the actual repair price is established.
+
+For inspection-required services, basePrice may be nullable.
+
+If an inspection fee exists, model it explicitly rather than pretending it is the final repair price.
+
+Do not require a fabricated amount.
+
+## Currency
+
+Use IDR.
+
+Store price amounts using Prisma Decimal and PostgreSQL numeric/decimal precision.
+
+Do not store money using floating-point arithmetic.
+
+## Validation
+
+- Name required.
+- Slug unique per business.
+- Category must exist and belong to business.
+- Price must be non-negative if present.
+- Fixed-price services require valid basePrice.
+- Service duration must be positive.
+- Unit limits must be valid.
+- Maximum units cannot be smaller than minimum units.
+- Inactive category cannot be assigned to a newly activated public service without defined policy.
+- Images must reference authorized media assets.
+
+## CRUD Features
+
+- Search services.
+- Filter by category.
+- Filter active/inactive.
+- Filter by pricing type.
+- Sort by display order.
+- Pagination.
+- Create.
+- Update.
+- Deactivate.
+- Image upload.
+- Image replacement.
+- Display Indonesian currency.
+
+## Historical Data
+
+A service referenced by future bookings must not be hard-deleted.
+
+Future Booking Engine must snapshot:
+
+- Service name.
+- Unit count.
+- Price type.
+- Price estimate.
+- Duration.
+
+Do not implement snapshot creation now.
+
+---
+
+# 10. SERVICE AREA MANAGEMENT
+
+Frontend:
+
+/dashboard/service-areas
+
+Backend:
+
+GET /api/v1/admin/service-areas
+
+POST /api/v1/admin/service-areas
+
+GET /api/v1/admin/service-areas/:id
+
+PATCH /api/v1/admin/service-areas/:id
+
+DELETE /api/v1/admin/service-areas/:id
+
+## ServiceArea Fields
+
+- name
+- province
+- city
+- district
+- visitFee
+- estimatedTravelMinutes
+- displayOrder
+- isActive
+- createdAt
+- updatedAt
+
+Keep the existing ServiceArea model and extend it safely.
+
+## Purpose
+
+The business can define where technicians may provide services.
+
+Example seed data:
+
+- Kota Depok — sample only.
+- Kota Bogor — sample only.
+- Jakarta Selatan — sample only.
+
+These areas are demonstration data, not a claim about an actual operating business.
+
+## Pricing
+
+Visit fee is separate from service pricing.
+
+Example:
+
+Service:
+Rp75.000
+
+Visit fee:
+Rp25.000
+
+Estimated total:
+Rp100.000
+
+This example is illustrative.
+
+Calculate monetary amounts on the server in future Booking Engine phases.
+
+## Area Rules
+
+- Area name required.
+- Area identifier unique within business.
+- Province/city/district normalized.
+- Visit fee non-negative.
+- Estimated travel time non-negative.
+- Inactive areas cannot be selected for new bookings.
+- Area referenced by historical bookings must not be hard-deleted.
+
+## Important Limitations
+
+Do not implement:
+
+- Automatic route calculation.
+- Distance-based fees.
+- Live technician GPS.
+- Google Maps Places integration.
+- Geocoding.
+- Real-time traffic.
+
+Those belong to future Professional functionality.
+
+---
+
+# 11. SERVICE AREA UI
+
+Build a responsive management interface.
+
+Table columns:
+
+- Area Name
+- Province
+- City
+- District
+- Visit Fee
+- Estimated Travel
+- Status
+- Actions
+
+Support:
+
+- Search.
+- Filter active/inactive.
+- Create area dialog or page.
+- Edit area.
+- Activate/deactivate.
+- Delete safely.
+- Empty state.
+- Validation feedback.
+
+Use existing shadcn/ui components.
+
+---
+
+# 12. MINIO MEDIA MANAGEMENT
+
+Use the MinIO client from Phase 01.
+
+Do not create duplicate storage connections.
+
+## Supported Assets
+
+- Business logo.
+- Service cover image.
+- Business gallery.
+
+Future AC-unit photos and work-order evidence belong to later phases.
+
+## Object Paths
+
+business/logos/{uuid}.webp
+
+services/images/{uuid}.webp
+
+gallery/images/{uuid}.webp
+
+Use safe random object identifiers.
+
+Never build object paths from unsafe filenames.
+
+## File Requirements
+
+Allowed formats:
+
+- JPEG
+- PNG
+- WebP
+
+Maximum upload size:
+
+5 MB per image.
+
+Reject:
+
+- Invalid MIME type.
+- Invalid image signature.
+- SVG.
+- Executable files.
+- Oversized files.
+- Malformed images.
+- Dangerous dimensions or pixel counts.
+
+Use actual file content validation.
+
+Where appropriate, use server-side image processing to normalize images to WebP.
+
+Never trust browser MIME data alone.
+
+## Fastify Compatibility
+
+Use file-upload handling compatible with the installed NestJS Fastify version.
+
+Modern NestJS Fastify supports Fastify-backed multipart interceptors when the matching package and framework version provide them.
+
+Otherwise, use the supported @fastify/multipart approach.
+
+Do not import Express FileInterceptor or use Express request-specific objects.
+
+Do not register multipart plugins twice.
+
+Configure request body and multipart limits explicitly.
+
+## Upload Security
+
+- JWT required for uploads.
+- OWNER/ADMIN authorization.
+- Object access controlled server-side.
+- Private MinIO bucket.
+- No public unrestricted bucket listing.
+- No MinIO credentials in browser bundles.
+- No raw filesystem paths.
+- No arbitrary object deletion.
+
+## Consistency
+
+When uploading or replacing an image:
+
+1. Validate file.
+2. Create a safe object key.
+3. Upload image to MinIO.
+4. Persist approved reference in PostgreSQL.
+5. Handle errors.
+6. Preserve previous image if replacement fails.
+7. Delete old unreferenced images safely after successful update.
+
+Use compensating cleanup where database and storage operations cannot share a transaction.
+
+Do not incorrectly claim a PostgreSQL transaction atomically covers MinIO operations.
+
+---
+
+# 13. MEDIA ASSET REGISTRY
+
+Create MediaAsset model if not already present.
+
+Fields:
+
+- id
+- businessId
+- objectKey
+- bucket
+- mimeType
+- fileSize
+- width
+- height
+- purpose
+- createdByUserId
+- createdAt
+- updatedAt
+
+Supported purposes:
+
+BUSINESS_LOGO
+SERVICE_IMAGE
+GALLERY_IMAGE
+
+Add appropriate indexes and uniqueness constraints.
+
+Keep object keys private from unnecessary public responses.
+
+Use stable media IDs in API requests.
+
+---
+
+# 14. BUSINESS GALLERY
+
+Frontend:
+
+/dashboard/gallery
+
+Backend:
+
+GET /api/v1/admin/gallery
+
+POST /api/v1/admin/gallery
+
+PATCH /api/v1/admin/gallery/:id
+
+DELETE /api/v1/admin/gallery/:id
+
+## Gallery Model
+
+- id
+- businessId
+- mediaAssetId
+- caption
+- altText
+- displayOrder
+- isActive
+- createdAt
+- updatedAt
+
+## Features
+
+- Upload.
+- Preview.
+- Gallery grid.
+- Caption.
+- Alt text.
+- Display order.
+- Activate/deactivate.
+- Safe deletion.
+- Empty state.
+
+Do not fabricate customer reviews or project achievements through the gallery.
+
+Gallery images must be explicitly designated public before Phase 04 displays them.
+
+---
+
+# 15. MEDIA API
+
+Implement backend routes compatible with existing storage conventions.
+
+Recommended:
+
+POST /api/v1/admin/media/upload
+
+GET /api/v1/admin/media
+
+GET /api/v1/admin/media/:id
+
+DELETE /api/v1/admin/media/:id
+
+GET /api/v1/public/media/:id
+
+## Public Media Security
+
+The public media endpoint must only expose objects attached to approved public business assets.
+
+Do not permit arbitrary object-key retrieval.
+
+Verify:
+
+- Correct business.
+- Public visibility.
+- Approved media purpose.
+- Active parent record where required.
+
+Do not expose work-order evidence or customer AC photographs through public routes.
+
+Use application-controlled media URLs or narrowly scoped signed URLs.
+
+Prevent SSRF and path traversal.
+
+---
+
+# 16. NESTJS BACKEND MODULES
+
+Create or extend:
+
+apps/backend/src/modules/business/
+
+apps/backend/src/modules/operating-hours/
+
+apps/backend/src/modules/business-closures/
+
+apps/backend/src/modules/booking-settings/
+
+apps/backend/src/modules/service-categories/
+
+apps/backend/src/modules/services/
+
+apps/backend/src/modules/service-areas/
+
+apps/backend/src/modules/media/
+
+apps/backend/src/modules/gallery/
+
+Each functional module should contain appropriate:
+
+- Module definition.
+- Controller.
+- Service.
+- Repository or Prisma abstraction where useful.
+- Request DTOs.
+- Response DTOs.
+- Validation.
+- Authorization.
+- Unit tests.
+
+Avoid excessive boilerplate.
+
+Follow dependency injection conventions.
+
+Do not create circular dependencies.
+
+---
+
+# 17. BACKEND SECURITY
+
+All admin APIs must reuse Phase 02 JWT authentication.
+
+Required:
+
+- JwtAuthGuard.
+- RolesGuard.
+- Authenticated user context.
+- Server-side role checks.
+- Business-scoped data access.
+- Input validation.
+- CSRF/origin protection for browser mutations.
+- Safe error responses.
+- Rate limiting on sensitive operations.
+- Audit logging.
+
+## Permissions
+
+OWNER:
+
+- Full business configuration.
+- Operating hours.
+- Booking settings.
+- Service catalog.
+- Service areas.
+- Gallery.
+- Media assets.
+
+ADMIN:
+
+- Read business settings.
+- Read operating hours.
+- Read booking configuration.
+- Manage service categories.
+- Manage services.
+- Manage service areas.
+- Manage gallery/media.
+
+TECHNICIAN:
+
+- No access to Phase 03 administration routes.
+
+Future technician workspace may read selected business information through separately authorized APIs.
+
+Do not weaken backend authorization just to allow frontend pages to load.
+
+---
+
+# 18. API RESPONSE CONTRACTS
+
+Reuse Phase 01 response conventions.
+
+Example success:
+
+{
+  "success": true,
+  "data": {
+    "id": "...",
+    "name": "Cuci AC",
+    "priceType": "FIXED",
+    "basePrice": "75000",
+    "isActive": true
+  }
+}
+
+Example validation error:
+
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Harga layanan tidak valid."
+  }
+}
+
+Use stable error codes:
+
+VALIDATION_ERROR
+UNAUTHENTICATED
+FORBIDDEN
+NOT_FOUND
+DUPLICATE_SLUG
+CATEGORY_IN_USE
+SERVICE_IN_USE
+SERVICE_AREA_IN_USE
+INVALID_OPERATING_HOURS
+INVALID_BOOKING_SETTINGS
+INVALID_PRICE_CONFIGURATION
+FILE_TOO_LARGE
+UNSUPPORTED_FILE_TYPE
+STORAGE_UNAVAILABLE
+INTERNAL_ERROR
+
+Do not expose raw Prisma errors.
+
+Use consistent pagination metadata.
+
+---
+
+# 19. NEXT.JS DASHBOARD
+
+Use the existing protected dashboard layout.
+
+Implement:
+
+/dashboard/settings/business
+
+/dashboard/settings/operating-hours
+
+/dashboard/settings/holidays
+
+/dashboard/settings/booking
+
+/dashboard/services
+
+/dashboard/services/new
+
+/dashboard/services/[id]/edit
+
+/dashboard/services/categories
+
+/dashboard/service-areas
+
+/dashboard/gallery
+
+## Navigation
+
+Add:
+
+Business
+  - Profile
+  - Operating Hours
+  - Holidays
+  - Booking Settings
+
+Services
+  - All Services
+  - Categories
+
+Service Areas
+
+Gallery
+
+Only show navigation allowed for current role.
+
+Backend authorization must independently enforce permissions.
+
+## UI Design
+
+Primary:
+#142C52
+
+Accent:
+#0891B2
+
+Background:
+#F8FAFC
+
+Use Geist font.
+
+Use existing shadcn/ui components.
+
+Design must be:
+
+- Modern.
+- Clean.
+- Premium.
+- Professional.
+- Responsive.
+- Accessible.
+- Consistent with Phase 01–02.
+
+## Required UX
+
+- Loading skeletons.
+- Proper empty states.
+- Search/filter where applicable.
+- Clear forms.
+- Field validation.
+- Confirmation dialogs.
+- Saving indicators.
+- Success/error toasts.
+- Accessible labels.
+- Keyboard support.
+- Mobile navigation.
+
+Do not create fake successful mutations.
+
+---
+
+# 20. NEXT.JS API INTEGRATION
+
+Use the centralized API client from Phase 01–02.
+
+Do not duplicate backend business logic.
+
+## Requirements
+
+- Typed request/response handling.
+- Reuse shared API contracts.
+- Cookie-based authenticated requests.
+- Safe 401 handling.
+- No JWT exposure.
+- No direct Prisma access.
+- No direct MinIO credential access.
+- Server-rendered initial data where appropriate.
+- Client Components for interactive forms.
+- Controlled cache invalidation after mutation.
+
+Respect the authenticated same-origin BFF/reverse-proxy strategy chosen in Phase 02.
+
+Do not introduce an inconsistent second authentication method.
+
+---
+
+# 21. SHARED API CONTRACTS
+
+Update:
+
+packages/api-contract
+
+Introduce framework-independent contracts for:
+
+- Business response.
+- Operating hours.
+- Closures.
+- Booking settings.
+- Service categories.
+- Services.
+- Pricing types.
+- Service areas.
+- Media metadata.
+- Gallery.
+- Pagination.
+
+Do not import Prisma Client or NestJS decorators into shared browser contracts.
+
+Avoid converting Prisma Decimal to JavaScript floating point when serializing money.
+
+Prefer decimal strings in API responses.
+
+---
+
+# 22. DATABASE MIGRATIONS
+
+Inspect existing Prisma schema before editing.
+
+Extend:
+
+- Business.
+- BusinessSetting.
+- ServiceCategory.
+- Service.
+- ServiceArea.
+
+Create where needed:
+
+- BusinessOperatingHour.
+- BusinessOperatingBreak.
+- BusinessClosure.
+- MediaAsset.
+- BusinessGallery.
+
+## Integrity
+
+- Correct foreign keys.
+- Business-scoped uniqueness.
+- Safe indexes.
+- Decimal money.
+- Date consistency.
+- Referential integrity.
+- No destructive cascades for historical data.
+
+Use versioned Prisma migrations.
+
+Do not reset PostgreSQL.
+
+Do not use prisma db push as a replacement for migrations.
+
+Preserve seeded business data.
+
+---
+
+# 23. SEED DATA
+
+Update Phase 01 seed safely.
+
+Sample business:
+
+CoolCare AC Service
+
+Categories:
+
+- AC Cleaning
+- AC Maintenance
+- AC Repair
+- AC Installation
+
+Services:
+
+Cuci AC
+FIXED
+Rp75.000
+60 minutes
+
+Isi Freon
+STARTING_FROM
+Rp150.000
+60 minutes
+
+Perbaikan AC
+INSPECTION_REQUIRED
+Price not predetermined
+90 minutes
+
+Pasang AC
+STARTING_FROM
+Rp350.000
+180 minutes
+
+These are sample values only.
+
+Sample hours:
+
+Monday–Friday:
+09:00–17:00
+
+Saturday:
+09:00–15:00
+
+Sunday:
+Closed
+
+Sample service areas must be clearly identifiable as demonstration data.
+
+Seed must be idempotent.
+
+Do not overwrite intentional user edits when reseeding.
+
+Do not create fake completed work orders or customer transactions.
+
+---
+
+# 24. SWAGGER DOCUMENTATION
+
+Update NestJS Swagger with real Phase 03 endpoints.
+
+Document:
+
+- Authentication requirements.
+- Roles.
+- DTO schemas.
+- Pricing type enum.
+- Validation errors.
+- Pagination.
+- File upload.
+- Media retrieval.
+- Service-area rules.
+
+Do not expose implementation secrets.
+
+Do not document future booking endpoints as completed.
+
+---
+
+# 25. BACKEND TESTING
+
+Implement tests for:
+
+## Business
+
+- OWNER update allowed.
+- ADMIN read allowed.
+- ADMIN owner-only update rejected.
+- TECHNICIAN rejected.
+- Invalid contact rejected.
+- Duplicate slug rejected.
+
+## Operating Hours
+
+- Valid weekly schedule.
+- Closed day.
+- Invalid open/close time.
+- Overlapping breaks.
+- Break outside working hours.
+- Atomic weekly update.
+
+## Closures
+
+- Valid date range.
+- Invalid range.
+- Duplicate closure.
+- Deactivation.
+
+## Booking Settings
+
+- Valid configuration.
+- Negative buffer rejection.
+- Invalid booking window.
+- Unauthorized update.
+
+## Categories
+
+- Create.
+- Edit.
+- Deactivate.
+- Duplicate slug rejected.
+- Unsafe delete prevented.
+
+## Services
+
+- Create.
+- Update.
+- Deactivate.
+- Valid FIXED pricing.
+- Valid STARTING_FROM pricing.
+- INSPECTION_REQUIRED without fabricated price.
+- Decimal precision.
+- Invalid duration.
+- Invalid unit range.
+- Invalid category.
+- Unauthorized reference rejected.
+
+## Service Areas
+
+- Create.
+- Update.
+- Activate/deactivate.
+- Invalid visit fee.
+- Duplicate area.
+- Unsafe deletion prevented.
+
+## MinIO
+
+- Valid image upload.
+- Invalid MIME rejection.
+- Invalid signature rejection.
+- Oversized upload rejection.
+- Unauthorized upload rejection.
+- Replace behavior.
+- Orphan cleanup.
+- Unauthorized deletion.
+- Private object protection.
+- MinIO outage handling.
+
+## RBAC
+
+- OWNER.
+- ADMIN.
+- TECHNICIAN.
+- Missing JWT.
+- Revoked session.
+- Forbidden mutations.
+
+Use unit and PostgreSQL integration tests.
+
+Do not claim live MinIO tests passed when only mocked tests were run.
+
+---
+
+# 26. FRONTEND TESTING
+
+Test:
+
+- Business profile loads and saves.
+- Operating hours editor.
+- Break period validation.
+- Closure management.
+- Booking settings form.
+- Category CRUD.
+- Service CRUD.
+- Pricing type conditional forms.
+- Service area CRUD.
+- Media upload feedback.
+- Image preview.
+- Gallery management.
+- Responsive dashboard navigation.
+- Unauthorized view handling.
+
+Verify mobile, tablet and desktop behavior.
+
+Use realistic mocked API responses for component tests and actual backend for integration/E2E tests.
+
+---
+
+# 27. PHASE 01–02 REGRESSION
+
+Verify:
+
+- npm workspaces still work.
+- Next.js homepage loads.
+- NestJS Fastify starts.
+- Swagger works.
+- Health endpoints work.
+- PostgreSQL remains connected.
+- MinIO remains connected.
+- Owner login works.
+- Admin login works.
+- Technician login works.
+- Refresh token rotation works.
+- Logout works.
+- Session revocation works.
+- Role-based dashboard routing works.
+- CSRF/origin protections remain active.
+
+Do not weaken auth or CORS to work around integration issues.
+
+---
+
+# 28. DOCUMENTATION
+
+Update:
+
+README.md
+
+docs/ARCHITECTURE.md
+
+docs/API_CONTRACT.md
+
+Create:
+
+docs/BUSINESS_SETTINGS.md
+
+docs/OPERATING_HOURS.md
+
+docs/SERVICE_CATALOG.md
+
+docs/SERVICE_AREAS.md
+
+docs/PRICING_RULES.md
+
+docs/MINIO_MEDIA.md
+
+docs/PHASE_03_REPORT.md
+
+Document:
+
+- Data models.
+- API endpoints.
+- Roles and permissions.
+- Price-type behavior.
+- Service-area configuration.
+- Booking buffer settings.
+- Image storage.
+- MinIO failure handling.
+- Migrations.
+- Seed strategy.
+- Tests.
+- Known limitations.
+
+---
+
+# 29. ACCEPTANCE CRITERIA
+
+Phase 03 can PASS only when:
+
+[ ] Business profile loads from PostgreSQL.
+
+[ ] OWNER can update business profile.
+
+[ ] Business logo upload works through MinIO.
+
+[ ] Operating hours can be configured for seven days.
+
+[ ] Break validation works.
+
+[ ] Business closures can be managed.
+
+[ ] Booking settings persist correctly.
+
+[ ] Service categories CRUD works.
+
+[ ] AC services CRUD works.
+
+[ ] Fixed pricing works.
+
+[ ] Starting-from pricing works.
+
+[ ] Inspection-required pricing works.
+
+[ ] Decimal monetary precision is maintained.
+
+[ ] Service images upload to MinIO.
+
+[ ] Service areas CRUD works.
+
+[ ] Visit fees persist accurately.
+
+[ ] Gallery management works.
+
+[ ] Media access control is enforced.
+
+[ ] Frontend and backend contracts match.
+
+[ ] JWT authentication remains intact.
+
+[ ] OWNER/ADMIN/TECHNICIAN RBAC works.
+
+[ ] Prisma migrations apply successfully.
+
+[ ] Seed data remains idempotent.
+
+[ ] Swagger documents real endpoints.
+
+[ ] Backend tests pass.
+
+[ ] Frontend tests pass.
+
+[ ] PostgreSQL integration tests pass.
+
+[ ] MinIO integration tests pass when configured.
+
+[ ] Phase 01–02 regression tests pass.
+
+[ ] npm run lint passes.
+
+[ ] npm run typecheck passes.
+
+[ ] npm run test passes.
+
+[ ] npm run build passes.
+
+[ ] Documentation is complete.
+
+No criterion may be marked PASS without actual evidence.
+
+---
+
+# 30. EXECUTION ORDER
+
+Implement in this order:
+
+1. Inspect Phase 01–02.
+2. Read previous validation reports.
+3. Confirm JWT/RBAC architecture.
+4. Inspect Prisma models.
+5. Design safe migrations.
+6. Extend business models.
+7. Implement BusinessModule.
+8. Implement operating hours.
+9. Implement closure exceptions.
+10. Implement booking settings.
+11. Implement category management.
+12. Implement service pricing types.
+13. Implement service CRUD.
+14. Implement service areas.
+15. Extend MinIO storage utilities.
+16. Implement MediaAsset registry.
+17. Implement business logo upload.
+18. Implement service image upload.
+19. Implement gallery.
+20. Implement backend DTO validation.
+21. Implement server-side authorization.
+22. Implement NestJS controllers.
+23. Update Swagger.
+24. Update shared contracts.
+25. Implement Next.js business settings UI.
+26. Implement operating hours UI.
+27. Implement closure UI.
+28. Implement booking settings UI.
+29. Implement categories UI.
+30. Implement services UI.
+31. Implement service areas UI.
+32. Implement gallery UI.
+33. Integrate frontend REST API.
+34. Add backend tests.
+35. Add frontend tests.
+36. Add PostgreSQL integration tests.
+37. Verify MinIO upload/retrieval.
+38. Verify Phase 01–02 regression.
+39. Run Prisma migrations.
+40. Run lint.
+41. Run typecheck.
+42. Run tests.
+43. Run production build.
+44. Fix defects.
+45. Update documentation.
+46. Generate Phase 03 report.
+
+Do not stop at planning.
+
+Do not automatically begin Phase 04.
+
+---
+
+# 31. FINAL IMPLEMENTATION REPORT
+
+Provide:
+
+## A. Implemented Features
+Real functionality completed.
+
+## B. Frontend Pages
+Working Next.js routes.
+
+## C. Backend APIs
+Working NestJS Fastify controllers.
+
+## D. Database Changes
+Prisma models, indexes, and migrations.
+
+## E. Pricing Rules
+Verified behavior for each price type.
+
+## F. Service Areas
+Actual CRUD and visit-fee validation results.
+
+## G. MinIO
+Upload, preview, access security and error behavior.
+
+## H. RBAC
+OWNER, ADMIN, and TECHNICIAN authorization results.
+
+## I. Testing
+Actual unit, integration and E2E evidence.
+
+## J. Regression
+Phase 01–02 compatibility results.
+
+## K. Known Issues
+Missing functionality and blockers.
+
+## L. Final Verdict
+PASS / PARTIAL / FAIL.
+
+A PASS requires all mandatory checks to be verified.
+
+Do not fabricate command outputs.
+
+**IMPLEMENT PHASE 03 NOW IN THE EXISTING MONOREPO.**
+
+END OF PHASE 03.

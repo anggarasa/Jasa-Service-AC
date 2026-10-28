@@ -1,0 +1,8 @@
+{
+  "name": "TampilKit AC Booking",
+  "description": "Sistem booking dan manajemen layanan servis AC CoolCare AC Service (TampilKit Studio)",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
