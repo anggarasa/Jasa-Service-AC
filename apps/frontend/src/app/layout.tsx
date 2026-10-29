@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { ChunkErrorListener } from '@/components/common/chunk-error-listener';
 
 export const metadata: Metadata = {
   title: 'CoolCare AC Service | Sistem Booking Service AC & Perawatan Lapangan',
@@ -23,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="id" className="scroll-smooth">
       <body className="min-h-screen flex flex-col font-sans bg-background text-foreground">
+        <ChunkErrorListener />
         {children}
       </body>
     </html>

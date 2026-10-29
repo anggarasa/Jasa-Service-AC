@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Wind, Phone, Mail, MapPin, Clock, ShieldCheck } from 'lucide-react';
 import { PublicBusiness } from '@tampilkit-ac/api-contract';
+import { ConnectionStatus } from '@/components/common/connection-status';
 
 interface FooterProps {
   business?: PublicBusiness | null;
@@ -145,21 +146,23 @@ export function Footer({ business }: FooterProps) {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 pt-8 border-t border-primary-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+        <div className="mt-12 pt-8 border-t border-primary-800 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <p>
             &copy; {new Date().getFullYear()} {name}. Seluruh Hak Cipta Dilindungi.
           </p>
-          <div className="flex items-center gap-6">
-            <Link href="/services" className="hover:text-slate-300 transition-colors">
+
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+            <ConnectionStatus />
+            <Link href="/services" className="hover:text-white transition-colors">
               Layanan
             </Link>
-            <Link href="/service-areas" className="hover:text-slate-300 transition-colors">
+            <Link href="/service-areas" className="hover:text-white transition-colors">
               Area
             </Link>
-            <Link href="/contact" className="hover:text-slate-300 transition-colors">
+            <Link href="/contact" className="hover:text-white transition-colors">
               Kontak
             </Link>
-            <Link href="/login" className="hover:text-slate-300 transition-colors text-accent">
+            <Link href="/login" className="hover:text-white transition-colors text-accent">
               Portal Staf
             </Link>
           </div>

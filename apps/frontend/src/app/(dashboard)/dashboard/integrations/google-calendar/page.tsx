@@ -85,6 +85,12 @@ export default function GoogleCalendarIntegrationPage() {
             <CheckCircle2 className="w-3.5 h-3.5" /> Terhubung Aktif
           </Badge>
         );
+      case 'NEEDS_SELECTION':
+        return (
+          <Badge className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 py-1 px-3">
+            <AlertCircle className="w-3.5 h-3.5" /> Perlu Pilih Kalender
+          </Badge>
+        );
       case 'REAUTH_REQUIRED':
         return (
           <Badge className="bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1.5 py-1 px-3">
@@ -166,6 +172,20 @@ export default function GoogleCalendarIntegrationPage() {
         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-800 flex items-start gap-3">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
           <p>{successMsg}</p>
+        </div>
+      )}
+
+      {statusData?.status === 'NEEDS_SELECTION' && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-5 h-5 text-blue-600 shrink-0" />
+            <span>Akun Google (<strong>{statusData.googleAccountEmail}</strong>) sudah terhubung, tetapi kalender tujuan belum dipilih.</span>
+          </div>
+          <Link href="/dashboard/settings/integrations/google" className="shrink-0">
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8">
+              Pilih Kalender Sekarang
+            </Button>
+          </Link>
         </div>
       )}
 

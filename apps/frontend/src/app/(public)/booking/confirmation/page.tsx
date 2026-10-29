@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Clock,
   Calendar,
+  CalendarPlus,
   MapPin,
   Sparkles,
   ArrowRight,
@@ -39,6 +40,50 @@ async function fetchBookingDetails(token: string): Promise<GuestBookingDetails |
   } catch {
     return null;
   }
+}
+
+function buildGoogleCalendarUrl(booking: GuestBookingDetails, token: string): string {
+  const startDate = new Date(booking.scheduledStartAt);
+  const durationMinutes = booking.estimatedDurationMinutes || 60;
+  const endDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
+
+  const startUtc = startDate.toISOString().replace(/-|:|\.\d\d\d/g, '');
+  const endUtc = endDate.toISOString().replace(/-|:|\.\d\d\d/g, '');
+
+  const title = `Servis AC CoolCare - ${booking.serviceName} (${booking.bookingCode})`;
+
+  const fullAddress = [
+    booking.serviceAddress.fullAddress,
+    booking.serviceAddress.district,
+    booking.serviceAddress.city,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const manageUrl = `${siteUrl}/booking/manage?token=${token}`;
+
+  const details = [
+    `Pemesanan Servis AC CoolCare`,
+    `--------------------------------------`,
+    `Kode Pemesanan : ${booking.bookingCode}`,
+    `Layanan        : ${booking.serviceName} (${booking.unitCount} Unit AC)`,
+    `Alamat Servis  : ${fullAddress}`,
+    `Estimasi Biaya : Rp ${Number(booking.estimatedTotal || 0).toLocaleString('id-ID')}`,
+    `--------------------------------------`,
+    `Lacak status pengerjaan & teknisi:`,
+    `${manageUrl}`,
+  ].join('\n');
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${startUtc}/${endUtc}`,
+    details,
+    location: fullAddress,
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 interface ConfirmationPageProps {
@@ -79,6 +124,7 @@ export default async function ConfirmationPage({ searchParams }: ConfirmationPag
   }
 
   const isConfirmed = booking.status === 'CONFIRMED';
+  const gcalUrl = buildGoogleCalendarUrl(booking, token);
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4">
@@ -163,6 +209,18 @@ export default async function ConfirmationPage({ searchParams }: ConfirmationPag
                   })}{' '}
                   WIB (~{booking.estimatedDurationMinutes} menit)
                 </p>
+                <div className="pt-2">
+                  <a
+                    href={gcalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs font-semibold transition-colors shadow-2xs"
+                    title="Simpan jadwal servis ini ke Google Calendar Anda"
+                  >
+                    <CalendarPlus className="w-3.5 h-3.5 text-blue-600" />
+                    + Simpan ke Google Calendar
+                  </a>
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -214,11 +272,22 @@ export default async function ConfirmationPage({ searchParams }: ConfirmationPag
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-          <Link href={`/booking/manage?token=${token}`} className="w-full sm:w-auto">
-            <Button variant="outline" className="w-full gap-2 text-xs">
-              Lihat Riwayat & Status Tiket <ArrowRight className="w-3.5 h-3.5" />
-            </Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <Link href={`/booking/manage?token=${token}`} className="w-full sm:w-auto">
+              <Button variant="outline" className="w-full gap-2 text-xs">
+                Lihat Riwayat & Status Tiket <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+            <a
+              href={gcalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs font-semibold transition-colors shadow-2xs"
+            >
+              <CalendarPlus className="w-3.5 h-3.5 text-blue-600" />
+              Simpan ke Google Calendar
+            </a>
+          </div>
 
           {business?.whatsappNumber && (
             <a

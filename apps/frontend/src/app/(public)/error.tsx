@@ -13,6 +13,21 @@ export default function PublicError({
 }) {
   useEffect(() => {
     console.error('Public error caught:', error);
+
+    const isChunkError =
+      error?.name === 'ChunkLoadError' ||
+      error?.message?.includes('Loading chunk') ||
+      error?.message?.includes('Failed to fetch dynamically imported module');
+
+    if (isChunkError && typeof window !== 'undefined') {
+      const STORAGE_KEY = 'chunk_error_reloaded';
+      const lastReload = sessionStorage.getItem(STORAGE_KEY);
+      const now = Date.now();
+      if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+        sessionStorage.setItem(STORAGE_KEY, now.toString());
+        window.location.reload();
+      }
+    }
   }, [error]);
 
   return (

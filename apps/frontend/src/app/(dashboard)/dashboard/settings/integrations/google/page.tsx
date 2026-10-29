@@ -53,9 +53,16 @@ export default function GoogleIntegrationSettingsPage() {
       setStatusData(res);
       setSelectedCalId(res.calendarId || '');
 
-      if (res.status === 'CONNECTED') {
+      if (res.status === 'CONNECTED' || res.status === 'NEEDS_SELECTION') {
         const calList = await fetchAvailableCalendars();
-        setCalendars(calList.items || []);
+        const items = calList.items || [];
+        setCalendars(items);
+        if (!res.calendarId && items.length > 0) {
+          const primaryCal = items.find((c: any) => c.primary) || items[0];
+          if (primaryCal?.id) {
+            setSelectedCalId(primaryCal.id);
+          }
+        }
       }
     } catch (err: any) {
       setError(err?.message || 'Gagal memuat status integrasi Google.');
@@ -164,6 +171,8 @@ export default function GoogleIntegrationSettingsPage() {
             <span>Status Autentikasi OAuth 2.0</span>
             {statusData?.status === 'CONNECTED' ? (
               <Badge className="bg-emerald-500 text-white">Terhubung</Badge>
+            ) : statusData?.status === 'NEEDS_SELECTION' ? (
+              <Badge className="bg-blue-600 text-white">Akun Terhubung (Pilih Kalender)</Badge>
             ) : statusData?.status === 'REAUTH_REQUIRED' ? (
               <Badge className="bg-amber-500 text-white">Perlu Login Ulang</Badge>
             ) : (
@@ -173,8 +182,20 @@ export default function GoogleIntegrationSettingsPage() {
         </CardHeader>
 
         <CardContent className="p-6 space-y-6">
-          {statusData?.status === 'CONNECTED' ? (
+          {statusData?.status === 'CONNECTED' || statusData?.status === 'NEEDS_SELECTION' ? (
             <div className="space-y-4">
+              {statusData.status === 'NEEDS_SELECTION' && (
+                <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-sm text-blue-800 flex items-start gap-3">
+                  <Info className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold">Otorisasi Akun Google Berhasil!</p>
+                    <p className="text-xs text-blue-700 mt-0.5">
+                      Akun <strong>{statusData.googleAccountEmail}</strong> telah terhubung. Silakan pilih salah satu kalender di bawah ini dan klik <strong>Simpan Kalender</strong> untuk mengaktifkan sinkronisasi jadwal secara penuh.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
@@ -214,7 +235,7 @@ export default function GoogleIntegrationSettingsPage() {
                     <option value="" disabled>-- Pilih Salah Satu Kalender --</option>
                     {calendars.map((cal) => (
                       <option key={cal.id} value={cal.id}>
-                        {cal.summary} {cal.primary ? '(Utama)' : ''}
+                        {cal.name || cal.summary || cal.id} {cal.primary ? '(Utama)' : ''}
                       </option>
                     ))}
                   </select>
@@ -222,7 +243,7 @@ export default function GoogleIntegrationSettingsPage() {
                   <Button
                     size="sm"
                     onClick={handleSelectCalendar}
-                    disabled={savingCal || !selectedCalId || selectedCalId === statusData.calendarId}
+                    disabled={savingCal || !selectedCalId || (statusData.status === 'CONNECTED' && selectedCalId === statusData.calendarId)}
                     className="bg-primary hover:bg-primary/90 text-white shrink-0 flex items-center gap-1.5 h-10 px-4"
                   >
                     <Check className="w-4 h-4" />

@@ -29,7 +29,7 @@ import { CalendarWatchService } from '../services/calendar-watch.service';
 import { CalendarSyncService } from '../services/calendar-sync.service';
 
 @ApiTags('Google Calendar Integration')
-@Controller('admin/integrations/google')
+@Controller(['admin/integrations/google', 'calendar', 'integrations/google'])
 export class GoogleOAuthController {
   constructor(
     private readonly oauthService: GoogleOAuthService,
@@ -82,7 +82,11 @@ export class GoogleOAuthController {
     }
 
     try {
-      await this.oauthService.handleCallback(code, state);
+      const protocol = (req.headers['x-forwarded-proto'] as string) || 'http';
+      const host = (req.headers.host as string) || 'localhost:3001';
+      const cleanUrl = req.url ? req.url.split('?')[0] : '';
+      const requestUrl = `${protocol}://${host}${cleanUrl}`;
+      await this.oauthService.handleCallback(code, state, requestUrl);
       if (req.headers.accept?.includes('application/json')) {
         return res.status(200).send({ success: true, message: 'Google Calendar berhasil terhubung.' });
       }

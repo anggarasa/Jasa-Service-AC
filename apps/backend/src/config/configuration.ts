@@ -30,7 +30,7 @@ export default () => ({
     enabled: process.env.GOOGLE_CALENDAR_ENABLED === 'true',
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/v1/integrations/google/callback',
+    redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/v1/calendar/callback',
     tokenEncryptionKey: process.env.GOOGLE_TOKEN_ENCRYPTION_KEY || 'tampilkit_gcal_aes256_key_32_bytes_len!',
     oauthStateSecret: process.env.GOOGLE_OAUTH_STATE_SECRET || 'tampilkit_oauth_state_secret_min_32_characters!',
     webhookPublicUrl: process.env.GOOGLE_WEBHOOK_PUBLIC_URL,
@@ -39,6 +39,6 @@ export default () => ({
     syncMaxRetries: parseInt(process.env.GOOGLE_SYNC_MAX_RETRIES || '5', 10),
     freebusyTimeoutMs: parseInt(process.env.GOOGLE_FREEBUSY_TIMEOUT_MS || '5000', 10),
     freebusyMaxStalenessSeconds: parseInt(process.env.GOOGLE_FREEBUSY_MAX_STALENESS_SECONDS || '60', 10),
-    workerEnabled: process.env.GOOGLE_WORKER_ENABLED === 'true',
+    workerEnabled: process.env.GOOGLE_WORKER_ENABLED !== 'false',
   },
 });

@@ -36,7 +36,7 @@ export class GoogleOAuthService {
     this.redirectUri =
       this.config.get<string>('google.redirectUri') ||
       process.env.GOOGLE_REDIRECT_URI ||
-      'http://localhost:3001/api/v1/integrations/google/callback';
+      'http://localhost:3001/api/v1/calendar/callback';
     this.stateSecret =
       this.config.get<string>('google.oauthStateSecret') ||
       process.env.GOOGLE_OAUTH_STATE_SECRET ||
@@ -112,7 +112,7 @@ export class GoogleOAuthService {
     });
   }
 
-  async handleCallback(code: string, state: string) {
+  async handleCallback(code: string, state: string, fallbackRedirectUri?: string) {
     const { businessId, userId } = this.validateState(state);
 
     const business = await this.prisma.business.findUnique({
@@ -122,8 +122,32 @@ export class GoogleOAuthService {
       throw new NotFoundException('Data bisnis tidak ditemukan.');
     }
 
-    const oauth2Client = this.getOAuth2Client();
-    const { tokens } = await oauth2Client.getToken(code);
+    let oauth2Client = this.getOAuth2Client();
+    let tokens: any;
+    try {
+      const result = await oauth2Client.getToken(code);
+      tokens = result.tokens;
+    } catch (err: any) {
+      if (
+        fallbackRedirectUri &&
+        (err?.message?.includes('redirect_uri_mismatch') ||
+          err?.response?.data?.error === 'redirect_uri_mismatch')
+      ) {
+        this.logger.warn(
+          `Redirect URI mismatch dengan default (${this.redirectUri}). Mencoba fallback dengan: ${fallbackRedirectUri}`,
+        );
+        const fallbackClient = new google.auth.OAuth2(
+          this.clientId,
+          this.clientSecret,
+          fallbackRedirectUri,
+        );
+        const result = await fallbackClient.getToken(code);
+        tokens = result.tokens;
+        oauth2Client = fallbackClient;
+      } else {
+        throw err;
+      }
+    }
 
     if (!tokens.refresh_token) {
       this.logger.warn('Google tidak mengembalikan refresh token. User mungkin sudah pernah otorisasi sebelumnya tanpa consent prompt.');
@@ -151,32 +175,83 @@ export class GoogleOAuthService {
     const expiresAt = tokens.expiry_date ? new Date(tokens.expiry_date) : null;
     const grantedScopes = tokens.scope ? tokens.scope.split(' ') : GOOGLE_CALENDAR_SCOPES;
 
+    // Check existing connection
+    const existingConnection = await this.prisma.calendarConnection.findFirst({
+      where: { businessId },
+    });
+
+    // Try to auto-detect primary calendar if none is selected yet
+    let autoCalendarId: string | null = existingConnection?.calendarId || null;
+    let autoCalendarName: string | null = existingConnection?.calendarName || null;
+    let autoCalendarTimezone: string | null = existingConnection?.calendarTimezone || null;
+    let targetStatus = autoCalendarId ? 'CONNECTED' : 'NEEDS_SELECTION';
+
+    if (!autoCalendarId) {
+      try {
+        const gcal = google.calendar({ version: 'v3', auth: oauth2Client });
+        const listRes = await gcal.calendarList.list({ minAccessRole: 'reader' });
+        const calList = listRes.data.items || [];
+        const primary = calList.find((c) => c.primary) || calList[0];
+        if (primary?.id) {
+          autoCalendarId = primary.id;
+          autoCalendarName = primary.summary || accountEmail || 'Google Calendar';
+          autoCalendarTimezone = primary.timeZone || 'Asia/Jakarta';
+          targetStatus = 'CONNECTED';
+          this.logger.log(`Otomatis mengaitkan kalender utama Google: ${autoCalendarName} (${autoCalendarId})`);
+        }
+      } catch (err: any) {
+        this.logger.warn(`Gagal mendeteksi kalender utama otomatis saat callback: ${err.message}`);
+      }
+    }
+
     // Save or update CalendarConnection
     const connection = await this.prisma.calendarConnection.upsert({
       where: {
-        id: (await this.prisma.calendarConnection.findFirst({ where: { businessId } }))?.id || 'new-uuid',
+        id: existingConnection?.id || 'new-uuid',
       },
       create: {
         businessId,
         provider: 'GOOGLE',
         googleAccountEmail: accountEmail,
+        calendarId: autoCalendarId,
+        calendarName: autoCalendarName,
+        calendarTimezone: autoCalendarTimezone,
         encryptedAccessToken,
         encryptedRefreshToken,
         accessTokenExpiresAt: expiresAt,
         grantedScopes,
-        status: 'NEEDS_SELECTION',
+        status: targetStatus,
       },
       update: {
         googleAccountEmail: accountEmail,
+        calendarId: autoCalendarId,
+        calendarName: autoCalendarName,
+        calendarTimezone: autoCalendarTimezone,
         encryptedAccessToken,
         ...(encryptedRefreshToken ? { encryptedRefreshToken } : {}),
         accessTokenExpiresAt: expiresAt,
         grantedScopes,
-        status: 'NEEDS_SELECTION',
+        status: targetStatus,
         lastError: null,
         lastErrorAt: null,
       },
     });
+
+    if (targetStatus === 'CONNECTED' && autoCalendarId) {
+      try {
+        await this.prisma.calendarSyncJob.create({
+          data: {
+            connectionId: connection.id,
+            aggregateType: 'FULL_SYNC',
+            aggregateId: connection.id,
+            operation: 'SYNC_EXTERNAL_EVENTS',
+            status: 'PENDING',
+          },
+        });
+      } catch {
+        // Ignored
+      }
+    }
 
     return {
       connectionId: connection.id,

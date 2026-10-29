@@ -100,6 +100,7 @@ export class GoogleCalendarClientService {
       return items.map((c) => ({
         id: c.id || '',
         name: c.summary || '',
+        summary: c.summary || '',
         timeZone: c.timeZone || 'Asia/Jakarta',
         primary: Boolean(c.primary),
         accessRole: c.accessRole || 'reader',

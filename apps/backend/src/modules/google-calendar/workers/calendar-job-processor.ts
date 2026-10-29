@@ -17,9 +17,12 @@ export class CalendarJobProcessor implements OnModuleInit, OnModuleDestroy {
     private readonly syncService: CalendarSyncService,
     private readonly config: ConfigService,
   ) {
-    this.enabled =
-      this.config.get<boolean>('google.workerEnabled') === true ||
-      process.env.GOOGLE_WORKER_ENABLED === 'true';
+    if (process.env.NODE_ENV === 'test') {
+      this.enabled = false;
+      return;
+    }
+    const configVal = this.config.get<boolean>('google.workerEnabled');
+    this.enabled = configVal !== undefined ? configVal : process.env.GOOGLE_WORKER_ENABLED !== 'false';
   }
 
   onModuleInit() {

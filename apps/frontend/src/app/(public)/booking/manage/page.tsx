@@ -13,6 +13,7 @@ import {
   Receipt,
   FileDown,
   DollarSign,
+  CalendarPlus,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -55,6 +56,55 @@ async function fetchFinancialSummary(bookingCode: string, token: string) {
   } catch {
     return null;
   }
+}
+
+function buildGoogleCalendarUrl(booking: GuestBookingDetails, token: string): string {
+  const startDate = new Date(booking.scheduledStartAt);
+  const durationMinutes = booking.estimatedDurationMinutes || 60;
+  const endDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
+
+  const formatUtc = (date: Date) =>
+    date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+  const startUtc = formatUtc(startDate);
+  const endUtc = formatUtc(endDate);
+
+  const title = `Servis AC CoolCare - ${booking.serviceName} (${booking.bookingCode})`;
+
+  const fullAddress = [
+    booking.serviceAddress.fullAddress,
+    booking.serviceAddress.subdistrict,
+    booking.serviceAddress.district,
+    booking.serviceAddress.city,
+    booking.serviceAddress.postalCode,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const manageUrl = `${siteUrl}/booking/manage?token=${token}`;
+
+  const details = [
+    `Pemesanan Servis AC CoolCare`,
+    `--------------------------------------`,
+    `Kode Pemesanan : ${booking.bookingCode}`,
+    `Layanan        : ${booking.serviceName} (${booking.unitCount} Unit AC)`,
+    `Alamat Servis  : ${fullAddress}`,
+    `Estimasi Biaya : Rp ${Number(booking.estimatedTotal || 0).toLocaleString('id-ID')}`,
+    `--------------------------------------`,
+    `Lacak status pengerjaan & teknisi:`,
+    `${manageUrl}`,
+  ].join('\n');
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${startUtc}/${endUtc}`,
+    details,
+    location: fullAddress,
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 interface ManagePageProps {
@@ -173,6 +223,18 @@ export default async function ManageBookingPage({ searchParams }: ManagePageProp
                     })}{' '}
                     WIB
                   </p>
+                  <div className="pt-2">
+                    <a
+                      href={buildGoogleCalendarUrl(booking, token)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs font-semibold transition-colors shadow-2xs"
+                      title="Simpan jadwal servis ini ke Google Calendar Anda"
+                    >
+                      <CalendarPlus className="w-3.5 h-3.5 text-blue-600" />
+                      + Simpan ke Google Calendar
+                    </a>
+                  </div>
                 </div>
 
                 <div className="pt-3 border-t border-slate-100">

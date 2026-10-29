@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Wind, Phone, Menu, X, Key, Calendar } from 'lucide-react';
+import { Wind, Menu, X, Key, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ConnectionStatus } from '@/components/common/connection-status';
 
 interface NavbarProps {
   businessName?: string;
@@ -42,39 +41,39 @@ export function Navbar({
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-accent shadow-md group-hover:scale-105 transition-transform">
-              <Wind className="w-6 h-6 stroke-[2.5]" />
+          <Link href="/" className="flex items-center gap-3 shrink-0 group">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-accent shadow-sm group-hover:scale-105 transition-transform shrink-0">
+              <Wind className="w-5 h-5 stroke-[2.5]" />
             </div>
-            <div>
-              <span className="text-lg font-bold tracking-tight text-primary flex items-center gap-1.5">
+            <div className="flex flex-col">
+              <div className="text-lg font-black tracking-tight text-primary leading-tight whitespace-nowrap">
                 {businessName.includes(' ') ? (
                   <>
-                    {businessName.split(' ')[0]}{' '}
-                    <span className="text-accent font-semibold">
+                    <span>{businessName.split(' ')[0]}</span>{' '}
+                    <span className="text-accent font-bold">
                       {businessName.split(' ').slice(1).join(' ')}
                     </span>
                   </>
                 ) : (
                   businessName
                 )}
-              </span>
-              <span className="block text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+              </div>
+              <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider leading-none mt-0.5">
                 Service & Maintenance
               </span>
             </div>
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium">
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-sm font-medium">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`transition-colors py-1 ${
+                className={`transition-colors py-1.5 whitespace-nowrap text-sm font-semibold ${
                   isActive(link.href)
-                    ? 'text-accent font-semibold border-b-2 border-accent'
-                    : 'text-slate-700 hover:text-accent'
+                    ? 'text-accent border-b-2 border-accent'
+                    : 'text-slate-600 hover:text-accent'
                 }`}
               >
                 {link.label}
@@ -83,11 +82,10 @@ export function Navbar({
           </nav>
 
           {/* Right Header Section */}
-          <div className="hidden sm:flex items-center gap-3">
-            <ConnectionStatus />
+          <div className="hidden sm:flex items-center gap-3 shrink-0">
             <Link
               href="/login"
-              className="text-xs font-medium text-slate-600 hover:text-primary transition-colors flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200/80 hover:bg-slate-100/60"
+              className="text-xs font-semibold text-slate-600 hover:text-primary transition-colors flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200/90 hover:bg-slate-50 shadow-2xs whitespace-nowrap"
             >
               <Key className="w-3.5 h-3.5 text-accent" />
               <span>Portal Staf</span>
@@ -96,7 +94,7 @@ export function Navbar({
               asChild
               variant="accent"
               size="sm"
-              className="gap-2 shadow-sm font-semibold"
+              className="gap-2 shadow-sm font-bold px-4 h-9 whitespace-nowrap"
             >
               <Link href="/booking">
                 <Calendar className="w-4 h-4" />
