@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail, Wind } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail, Wind, Crown, ShieldCheck, Wrench, Sparkles } from 'lucide-react';
 
 export function LoginForm() {
   const router = useRouter();
@@ -21,6 +21,7 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginRequest>({
     resolver: zodResolver(LoginRequestSchema),
@@ -147,6 +148,74 @@ export function LoginForm() {
           )}
         </Button>
       </form>
+
+      {/* Quick Login Dummy Accounts */}
+      <div className="space-y-3 pt-2">
+        <div className="relative flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200" />
+          </div>
+          <span className="relative bg-white px-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3 text-accent" /> Masuk Cepat Akun Demo
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={() => {
+              setValue('email', 'owner@coolcare.id', { shouldValidate: true });
+              setValue('password', 'OwnerSecurePass123!', { shouldValidate: true });
+              onSubmit({ email: 'owner@coolcare.id', password: 'OwnerSecurePass123!' });
+            }}
+            className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-amber-200/90 bg-amber-50/70 hover:bg-amber-100/80 text-amber-900 transition-all text-center group disabled:opacity-50 shadow-2xs"
+            title="Masuk sebagai Owner / Pemilik"
+          >
+            <div className="w-7 h-7 rounded-lg bg-amber-200/60 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+              <Crown className="w-4 h-4 text-amber-700" />
+            </div>
+            <span className="text-xs font-bold leading-tight">Owner</span>
+            <span className="text-[10px] text-amber-700/80 mt-0.5">Semua Akses</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={() => {
+              setValue('email', 'admin@coolcare.id', { shouldValidate: true });
+              setValue('password', 'AdminSecurePass123!', { shouldValidate: true });
+              onSubmit({ email: 'admin@coolcare.id', password: 'AdminSecurePass123!' });
+            }}
+            className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-blue-200/90 bg-blue-50/70 hover:bg-blue-100/80 text-blue-900 transition-all text-center group disabled:opacity-50 shadow-2xs"
+            title="Masuk sebagai Admin Operasional"
+          >
+            <div className="w-7 h-7 rounded-lg bg-blue-200/60 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+              <ShieldCheck className="w-4 h-4 text-blue-700" />
+            </div>
+            <span className="text-xs font-bold leading-tight">Admin</span>
+            <span className="text-[10px] text-blue-700/80 mt-0.5">Operasional</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={() => {
+              setValue('email', 'technician@coolcare.id', { shouldValidate: true });
+              setValue('password', 'TechSecurePass123!', { shouldValidate: true });
+              onSubmit({ email: 'technician@coolcare.id', password: 'TechSecurePass123!' });
+            }}
+            className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-emerald-200/90 bg-emerald-50/70 hover:bg-emerald-100/80 text-emerald-900 transition-all text-center group disabled:opacity-50 shadow-2xs"
+            title="Masuk sebagai Teknisi Lapangan"
+          >
+            <div className="w-7 h-7 rounded-lg bg-emerald-200/60 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+              <Wrench className="w-4 h-4 text-emerald-700" />
+            </div>
+            <span className="text-xs font-bold leading-tight">Teknisi</span>
+            <span className="text-[10px] text-emerald-700/80 mt-0.5">Workspace</span>
+          </button>
+        </div>
+      </div>
 
       <div className="text-center pt-2">
         <p className="text-xs text-muted-foreground">
